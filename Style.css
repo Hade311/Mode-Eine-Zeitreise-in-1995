@@ -1,0 +1,207 @@
+/* --- 1. Basis-Stile --- */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f0f5;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+h3 {
+    color: #0056b3;
+}
+
+/* --- 2. Kamera-Container & Overlay-Fix (Fehlerbehebung) --- */
+
+.camera-container {
+    /* Wichtig: Ermöglicht die absolute Positionierung des Overlays */
+    position: relative; 
+    width: 100%; 
+    max-width: 600px; 
+    margin: 0 auto 20px;
+    border: 5px solid #333; /* Einrahmen wie bei einer Einwegkamera */
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+    overflow: hidden; /* Verhindert, dass das Video über den Rahmen hinausragt */
+}
+
+#videoElement {
+    display: block;
+    width: 100%;
+    height: auto;
+    /* Optionale 90er-Jahre-Basis-Optik für das Video selbst */
+    filter: brightness(1.05) contrast(1.05);
+}
+
+.overlay {
+    /* Wichtig: Positioniert das Overlay genau über dem Video */
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    /* Sorgt dafür, dass Klicks durch das Overlay auf das Video gehen können */
+    pointer-events: none; 
+    z-index: 2; /* Stellt sicher, dass das Overlay über dem Video liegt */
+}
+
+/* --- 3. Filter-Stile für die Live-Vorschau --- */
+
+/* Grunge-Stil: dunkler, körniger */
+.grunge-style {
+    opacity: 0.3;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3));
+}
+
+/* Hip-Hop (Baggy)-Stil: leuchtende Ränder oder Muster */
+.hiphop-baggy {
+    border: 15px solid rgba(255, 255, 0, 0.8); /* Dicker Neon-Rand */
+    box-sizing: border-box;
+    background: none;
+}
+
+/* Rave (Neon)-Stil: kräftige Farben, Lichteffekte */
+.rave-neon {
+    box-shadow: 0 0 40px 10px rgba(255, 0, 255, 0.7) inset; /* Neon-Leuchten */
+    background: linear-gradient(to bottom, rgba(0, 255, 255, 0.1), rgba(255, 0, 255, 0.1));
+}
+
+/* ------------------------------------------- */
+
+/* --- 4. Steuerung und Ausgabe Stile --- */
+.controls {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 30px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+#filterSelect, button {
+    padding: 10px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    border: 2px solid #0056b3;
+}
+
+button {
+    background-color: #007bff;
+    color: white;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
+
+.output {
+    text-align: center;
+    width: 100%;
+    max-width: 600px;
+}
+
+#photo {
+    max-width: 100%;
+    height: auto;
+    margin-top: 15px;
+    border: 5px dashed #aaa;
+    display: none; /* Initial versteckt */
+}
+
+#downloadLink {
+    display: inline-block;
+    margin-top: 15px;
+    padding: 10px 20px;
+    background-color: #28a745;
+    color: white;
+    text-decoration: none;
+    border-radius: 5px;
+}
+
+#downloadLink:hover {
+    background-color: #1e7e34;
+}
+/* ... (Basis-Stile von oben) ... */
+
+/* --- 2. Kamera-Container & Overlay-Fix (WICHTIG) --- */
+
+.camera-container {
+    position: relative; 
+    width: 100%; 
+    max-width: 600px; 
+    margin: 0 auto 20px;
+    border: 5px solid #333; 
+    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
+    overflow: hidden; 
+}
+
+#videoElement {
+    display: block;
+    width: 100%;
+    height: auto;
+    filter: brightness(1.05) contrast(1.05);
+}
+
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; 
+    z-index: 2; 
+}
+
+/* --- 3. Filter-Stile für die Live-Vorschau (Visuelle Filter) --- */
+
+/* Grunge-Stil: dunkler, körniger */
+.grunge-style {
+    opacity: 0.3;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3));
+}
+
+/* Hip-Hop (Baggy)-Stil: leuchtende Ränder oder Muster */
+.hiphop-baggy {
+    border: 15px solid rgba(255, 255, 0, 0.8); 
+    box-sizing: border-box;
+    background: none;
+}
+
+/* Rave (Neon)-Stil: kräftige Farben, Lichteffekte */
+.rave-neon {
+    box-shadow: 0 0 40px 10px rgba(255, 0, 255, 0.7) inset; 
+    background: linear-gradient(to bottom, rgba(0, 255, 255, 0.1), rgba(255, 0, 255, 0.1));
+}
+
+/* --- NEU: Outfits als Bild-Overlay --- */
+
+/* Der Haupt-Outfit-Container muss das gesamte Overlay einnehmen */
+.grunge-outfit {
+    /* Wichtig: Das Overlay selbst ist transparent, die Bilder sind die Kinder */
+    position: relative; 
+    width: 100%; 
+    height: 100%; 
+}
+
+/* Stil für die einzelnen Outfit-Bilder im Overlay */
+.grunge-outfit .outfit-piece {
+    position: absolute;
+    width: 100%; /* Oder eine feste Größe anpassen */
+    height: auto;
+    left: 0;
+    /* Vertikal positionieren, damit es wie Kleidung aussieht */
+    top: 0; 
+    object-fit: contain; /* Sorgt dafür, dass das Bild innerhalb des Overlays skaliert wird */
+    display: block;
+}
+
+/* Sie könnten hier spezifischere Positionen für die Teile definieren: */
+.grunge-outfit #overlayJacket {
+    top: -5%; /* Jacke etwas höher positionieren */
+}
+
+.grunge-outfit #overlayPants {
+    top: 30%; /* Hosen starten tiefer */
+}

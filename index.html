@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>90er-Jahre-Foto-Filter</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="camera-container">
+        <video id="videoElement" autoplay playsinline></video>
+        <div id="overlay" class="overlay"></div>
+    </div>
+    
+    <div style="display: none;">
+        <img id="grungeJacket" src="grunge jacket.jpg" alt="Grunge Jacket" crossorigin="anonymous">
+        <img id="grungePants" src="grunge black ripped jeans.jpg" alt="Grunge Pants" crossorigin="anonymous">
+    </div>
+
+    <div class="controls">
+        <select id="filterSelect">
+            <option value="none">Kein Filter (Original)</option>
+            <option value="grunge-style">Grunge (Visuell)</option>
+            <option value="hiphop-baggy">Hip-Hop (Visuell)</option>
+            <option value="rave-neon">Rave (Visuell)</option>
+            <option value="grunge-outfit">**Grunge (Outfit)**</option> 
+        </select>
+
+        <button id="captureButton">📸 Foto aufnehmen</button>
+        <button id="switchCameraButton">🔄 Kamera wechseln (Front/Rück)</button>
+    </div>
+
+    <div class="output">
+        <h3>Aufgenommenes Bild:</h3>
+        <canvas id="canvas" style="display: none;"></canvas>
+        <img id="photo" alt="Aufgenommenes Bild">
+        <a id="downloadLink" download="90er_style_foto.png" style="display: none;">⬇️ Bild herunterladen</a>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
