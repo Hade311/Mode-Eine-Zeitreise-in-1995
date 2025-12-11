@@ -67,7 +67,36 @@ h3 {
     background: linear-gradient(to bottom, rgba(0, 255, 255, 0.1), rgba(255, 0, 255, 0.1));
 }
 
-/* ------------------------------------------- */
+/* --- NEU: Outfits als Bild-Overlay --- */
+
+/* Der Haupt-Outfit-Container muss das gesamte Overlay einnehmen */
+.grunge-outfit {
+    position: relative; 
+    width: 100%; 
+    height: 100%; 
+}
+
+/* Stil für die einzelnen Outfit-Bilder im Overlay */
+.grunge-outfit .outfit-piece {
+    position: absolute;
+    height: auto;
+    object-fit: contain;
+    display: block;
+}
+
+/* Spezifische Positionierung für die Jacke (Oberkörper) */
+.grunge-outfit #overlayJacket {
+    width: 90%; 
+    left: 5%;
+    top: -5%; /* Etwas über den Rand hinaus */
+}
+
+/* Spezifische Positionierung für die Hose (Unterkörper) */
+.grunge-outfit #overlayPants {
+    width: 70%; 
+    left: 15%; /* Zentrieren der Hose */
+    top: 30%; 
+}
 
 /* --- 4. Steuerung und Ausgabe Stile --- */
 .controls {
@@ -122,86 +151,4 @@ button:hover {
 
 #downloadLink:hover {
     background-color: #1e7e34;
-}
-/* ... (Basis-Stile von oben) ... */
-
-/* --- 2. Kamera-Container & Overlay-Fix (WICHTIG) --- */
-
-.camera-container {
-    position: relative; 
-    width: 100%; 
-    max-width: 600px; 
-    margin: 0 auto 20px;
-    border: 5px solid #333; 
-    box-shadow: 0 8px 15px rgba(0, 0, 0, 0.3);
-    overflow: hidden; 
-}
-
-#videoElement {
-    display: block;
-    width: 100%;
-    height: auto;
-    filter: brightness(1.05) contrast(1.05);
-}
-
-.overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    pointer-events: none; 
-    z-index: 2; 
-}
-
-/* --- 3. Filter-Stile für die Live-Vorschau (Visuelle Filter) --- */
-
-/* Grunge-Stil: dunkler, körniger */
-.grunge-style {
-    opacity: 0.3;
-    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.3));
-}
-
-/* Hip-Hop (Baggy)-Stil: leuchtende Ränder oder Muster */
-.hiphop-baggy {
-    border: 15px solid rgba(255, 255, 0, 0.8); 
-    box-sizing: border-box;
-    background: none;
-}
-
-/* Rave (Neon)-Stil: kräftige Farben, Lichteffekte */
-.rave-neon {
-    box-shadow: 0 0 40px 10px rgba(255, 0, 255, 0.7) inset; 
-    background: linear-gradient(to bottom, rgba(0, 255, 255, 0.1), rgba(255, 0, 255, 0.1));
-}
-
-/* --- NEU: Outfits als Bild-Overlay --- */
-
-/* Der Haupt-Outfit-Container muss das gesamte Overlay einnehmen */
-.grunge-outfit {
-    /* Wichtig: Das Overlay selbst ist transparent, die Bilder sind die Kinder */
-    position: relative; 
-    width: 100%; 
-    height: 100%; 
-}
-
-/* Stil für die einzelnen Outfit-Bilder im Overlay */
-.grunge-outfit .outfit-piece {
-    position: absolute;
-    width: 100%; /* Oder eine feste Größe anpassen */
-    height: auto;
-    left: 0;
-    /* Vertikal positionieren, damit es wie Kleidung aussieht */
-    top: 0; 
-    object-fit: contain; /* Sorgt dafür, dass das Bild innerhalb des Overlays skaliert wird */
-    display: block;
-}
-
-/* Sie könnten hier spezifischere Positionen für die Teile definieren: */
-.grunge-outfit #overlayJacket {
-    top: -5%; /* Jacke etwas höher positionieren */
-}
-
-.grunge-outfit #overlayPants {
-    top: 30%; /* Hosen starten tiefer */
 }
