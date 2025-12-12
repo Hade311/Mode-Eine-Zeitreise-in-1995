@@ -1,4 +1,3 @@
-// ... (Variablen wie video, canvas etc. bleiben gleich) ...
 const video = document.getElementById('videoElement');
 const canvas = document.getElementById('canvas');
 const photo = document.getElementById('photo');
@@ -8,7 +7,7 @@ const captureButton = document.getElementById('captureButton');
 const switchCameraButton = document.getElementById('switchCameraButton');
 const downloadLink = document.getElementById('downloadLink');
 
-// Outfit Bilder
+// Bilder laden
 const grungeJacketImg = document.getElementById('grungeJacket');
 const grungePantsImg = document.getElementById('grungePants');
 
@@ -17,79 +16,70 @@ let facingMode = 'user';
 let poseDetector = null;
 const MIN_CONFIDENCE = 0.3;
 
-// ===== 1. KI-Modell Initialisierung (VERBESSERT) =====
+// ===== 1. Initialisierung mit Sicherheitsnetz =====
 async function initPoseDetection() {
     captureButton.innerText = "⏳ Lade KI...";
     captureButton.disabled = true;
 
+    // Sicherheitsnetz: Button nach 4 Sekunden auf jeden Fall aktivieren
+    setTimeout(() => {
+        if (captureButton.disabled) {
+            console.warn("Zeitüberschreitung beim Laden. Aktiviere Button trotzdem.");
+            captureButton.disabled = false;
+            captureButton.innerText = "📸 Foto (Ohne KI)";
+        }
+    }, 4000);
+
     try {
-        // Warten, bis TensorFlow bereit ist
         await tf.ready();
-        console.log("TensorFlow ist bereit. Backend:", tf.getBackend());
-
-        // Konfiguration für das Modell
-        const detectorConfig = { 
-            modelType: posedetection.movenet.modelType.SINGLEPOSE_LIGHTNING 
-        };
-        
-        // Modell erstellen
-        poseDetector = await posedetection.createDetector(
-            posedetection.SupportedModels.MoveNet, 
-            detectorConfig
-        );
-
-        console.log('KI-Modell erfolgreich geladen!');
-        captureButton.innerText = "📸 Foto aufnehmen";
-        captureButton.disabled = false;
-
-    } catch (err) {
-        console.error('Kritischer Fehler beim Laden der KI:', err);
-        // Fallback: Wir erlauben trotzdem das Foto machen, nur ohne Körpererkennung
-        captureButton.innerText = "📸 Foto (ohne KI)";
-        captureButton.disabled = false;
-        alert("Hinweis: Die KI konnte nicht geladen werden (" + err.message + "). Du kannst trotzdem Fotos machen, aber das Outfit wird evtl. nicht perfekt sitzen.");
-    }
-}
-// ... (Rest des Codes bleibt gleich) ...
-
-// ===== 1. KI-Modell Initialisierung =====
-async function initPoseDetection() {
-    captureButton.innerText = "⏳ Lade KI-Modell...";
-    captureButton.disabled = true;
-    try {
-        // Wir verwenden MoveNet (schnell und relativ genau für Einzelpersonen)
         const detectorConfig = { modelType: posedetection.movenet.modelType.SINGLEPOSE_LIGHTNING };
         poseDetector = await posedetection.createDetector(posedetection.SupportedModels.MoveNet, detectorConfig);
         
-        console.log('Pose Detection Modell erfolgreich geladen!');
+        console.log('KI bereit.');
         captureButton.innerText = "📸 Foto aufnehmen";
         captureButton.disabled = false;
     } catch (err) {
-        console.error('Fehler beim Laden des KI-Modells:', err);
-        captureButton.innerText = "❌ Fehler beim Laden";
-        alert("Fehler: Das KI-Modell konnte nicht geladen werden. Bitte Seite neu laden.");
+        console.error('KI Fehler:', err);
+        // Wir machen weiter, auch ohne KI!
+        captureButton.innerText = "📸 Foto (Ohne KI)";
+        captureButton.disabled = false;
+        poseDetector = null; // Sicherstellen, dass es null ist
     }
 }
 
-// ===== 2. Kamera Funktionen =====
-async function startCamera() {
+// ===== 2. Kamera =====
+// In der Funktion startCamera
+async function startCamera(facingMode) {
     if (currentStream) {
         currentStream.getTracks().forEach(track => track.stop());
     }
+
+    // Vereinfachte Constraints, um Konflikte zu vermeiden
     const constraints = {
-        video: { facingMode: facingMode, width: { ideal: 1280 }, height: { ideal: 720 } },
+        video: {
+            // Wir lassen facingMode weg, wenn nur eine Kamera verfügbar ist, 
+            // oder verwenden es, wenn es funktioniert.
+            // Zuerst versuchen wir es mit facingMode:
+            facingMode: facingMode
+        },
         audio: false
     };
+
     try {
         const stream = await navigator.mediaDevices.getUserMedia(constraints);
         currentStream = stream;
         video.srcObject = stream;
-        // Warten bis Video-Metadaten geladen sind, damit width/height verfügbar sind
-        await new Promise(resolve => video.onloadedmetadata = resolve);
+        
+        // WICHTIG: Prüfen Sie die geladene Auflösung (kann bei Fehlern helfen)
+        video.onloadedmetadata = function() {
+            console.log("Kamera gestartet mit Auflösung:", video.videoWidth, "x", video.videoHeight);
+        };
+
         video.play();
     } catch (err) {
-        console.error("Kamerafehler:", err);
-        alert("Zugriff auf Kamera verweigert oder nicht möglich.");
+        console.error("Fehler beim Zugriff auf die Kamera: ", err);
+        alert("Kamera-Fehler: Konnte Videoquelle nicht starten. Ursache: " + err.name);
+        // Falls der Fehler 'NotAllowedError' ist, liegt es an den Berechtigungen (Punkt 1)
     }
 }
 
@@ -98,164 +88,105 @@ switchCameraButton.addEventListener('click', () => {
     startCamera();
 });
 
-// ===== 3. Filter UI Logik =====
+// ===== 3. Filter Auswahl =====
 filterSelect.addEventListener('change', () => {
-    // Setzt CSS-Klasse für visuelle Live-Filter (nicht für das Outfit)
     overlay.className = 'overlay ' + filterSelect.value;
 });
 
-
-// ===== 4. Hauptfunktion: Foto aufnehmen & Verarbeiten =====
+// ===== 4. Foto Aufnehmen (Robuste Version) =====
 async function takePicture() {
-    if (!video.srcObject || !poseDetector) return;
+    // Wenn kein Video da ist, breche ab
+    if (!video.srcObject) {
+        alert("Kamera läuft nicht!");
+        return;
+    }
 
-    // UI Feedback während der Verarbeitung
     captureButton.disabled = true;
-    captureButton.innerText = "🤖 Verarbeite...";
+    captureButton.innerText = "Verarbeite...";
 
-    // Canvas auf Video-Größe einstellen
+    // Canvas vorbereiten
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext('2d');
 
-    // WICHTIG: Da wir das Video im CSS spiegeln (transform: scaleX(-1)),
-    // müssen wir das auch beim Zeichnen auf den Canvas tun, sonst passt die Pose nicht.
-    ctx.save(); // Aktuellen Zustand speichern
-    ctx.scale(-1, 1); // Horizontal spiegeln
-    ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height); // Bild versetzt zeichnen
-    ctx.restore(); // Zustand wiederherstellen (damit die Outfits nicht auch gespiegelt werden)
-
+    // Video zeichnen (Spiegeln beachten)
+    ctx.save();
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+    ctx.restore();
 
     const selectedFilter = filterSelect.value;
 
-    // --- HAUPTLOGIK: Outfit Anprobe ---
-    if (selectedFilter === 'grunge-outfit') {
+    // --- KI-Logik: Nur ausführen, wenn Modell da ist UND Outfit gewählt ---
+    if (selectedFilter === 'grunge-outfit' && poseDetector) {
         try {
-            // Pose auf dem statischen Canvas-Bild erkennen
             const poses = await poseDetector.estimatePoses(canvas);
             
             if (poses && poses.length > 0) {
-                const keypoints = poses[0].keypoints;
+                // Keypoints finden
+                const k = poses[0].keypoints;
+                const findPt = (name) => k.find(p => p.name === name && p.score > MIN_CONFIDENCE);
+
+                const lS = findPt('leftShoulder');
+                const rS = findPt('rightShoulder');
+                const lH = findPt('leftHip');
+                const rH = findPt('rightHip');
+
+                // Jacke zeichnen (einfache Logik)
+                if (lS && rS) {
+                    const width = Math.abs(rS.x - lS.x) * 1.8; // Breiter als Schultern
+                    const height = width * 1.2; // Verhältnis
+                    const x = ((lS.x + rS.x) / 2) - (width / 2);
+                    const y = ((lS.y + rS.y) / 2) - (height * 0.2);
+                    ctx.drawImage(grungeJacketImg, x, y, width, height);
+                }
                 
-                // Hilfsfunktion um Keypoints sicher zu finden
-                const getKp = (name) => keypoints.find(kp => kp.name === name && kp.score > MIN_CONFIDENCE);
-
-                // Relevante Punkte suchen
-                const leftShoulder = getKp('leftShoulder');
-                const rightShoulder = getKp('rightShoulder');
-                const leftHip = getKp('leftHip');
-                const rightHip = getKp('rightHip');
-                const leftAnkle = getKp('leftAnkle');
-                const rightAnkle = getKp('rightAnkle');
-
-                // === A) OBERKÖRPER (Jacke) ===
-                // Wir brauchen beide Schultern und mindestens eine Hüfte, um den Torso zu definieren.
-                if (leftShoulder && rightShoulder && (leftHip || rightHip)) {
-                    // 1. Breite berechnen: Abstand zwischen Schultern
-                    const shoulderDistX = Math.abs(rightShoulder.x - leftShoulder.x);
-                    // Jacken sind breiter als Schultern -> Multiplikator für "Baggy"-Look (z.B. 1.6-fach)
-                    const jacketWidth = shoulderDistX * 1.6;
-
-                    // 2. Höhe berechnen: Durchschnittl. Schulterhöhe bis durchschnittl. Hüfthöhe
-                    const avgShoulderY = (leftShoulder.y + rightShoulder.y) / 2;
-                    // Nehme die vorhandene Hüfte oder den Durchschnitt, falls beide da sind
-                    const avgHipY = (leftHip && rightHip) ? (leftHip.y + rightHip.y) / 2 : (leftHip ? leftHip.y : rightHip.y);
-                    const torsoHeight = Math.abs(avgHipY - avgShoulderY);
-                    // Jacke geht etwas über Schultern und unter Hüfte -> Multiplikator (z.B. 1.4-fach)
-                    const jacketHeight = torsoHeight * 1.4;
-                    
-                    // 3. Position berechnen: Mitte zwischen Schultern
-                    const centerX = (leftShoulder.x + rightShoulder.x) / 2;
-                    // X-Position ist Mitte minus halbe Jackenbreite
-                    const drawX = centerX - (jacketWidth / 2);
-                    // Y-Position: Schulterhöhe minus ein Stück nach oben (z.B. 20% der Jackenhöhe)
-                    const drawY = avgShoulderY - (jacketHeight * 0.2);
-
-                    // Zeichnen!
-                    ctx.drawImage(grungeJacketImg, drawX, drawY, jacketWidth, jacketHeight);
+                // Hose zeichnen (einfache Logik)
+                if (lH && rH) {
+                    const width = Math.abs(rH.x - lH.x) * 2.5; // Baggy Style
+                    const height = width * 1.5; 
+                    const x = ((lH.x + rH.x) / 2) - (width / 2);
+                    const y = ((lH.y + rH.y) / 2);
+                    ctx.drawImage(grungePantsImg, x, y, width, height);
                 }
-
-                // === B) UNTERKÖRPER (Hose) ===
-                // Wir brauchen beide Hüften und mindestens einen Knöchel für die Beinlänge.
-                if (leftHip && rightHip && (leftAnkle || rightAnkle)) {
-                     // 1. Breite berechnen: Abstand zwischen Hüften
-                    const hipDistX = Math.abs(rightHip.x - leftHip.x);
-                    // Baggy Jeans sind viel breiter als die Hüfte -> Multiplikator (z.B. 2.2-fach)
-                    const pantsWidth = hipDistX * 2.2;
-
-                     // 2. Höhe berechnen: Durchschnittl. Hüfthöhe bis durchschnittl. Knöchelhöhe
-                    const avgHipY = (leftHip.y + rightHip.y) / 2;
-                    const avgAnkleY = (leftAnkle && rightAnkle) ? (leftAnkle.y + rightAnkle.y) / 2 : (leftAnkle ? leftAnkle.y : rightAnkle.y);
-                    const legLength = Math.abs(avgAnkleY - avgHipY);
-                    // Hose geht etwas über Hüfte und bis zum Boden -> Multiplikator (z.B. 1.2-fach)
-                    const pantsHeight = legLength * 1.2;
-
-                    // 3. Position berechnen: Mitte zwischen Hüften
-                    const centerX = (leftHip.x + rightHip.x) / 2;
-                    const drawX = centerX - (pantsWidth / 2);
-                    // Y-Position: Etwas über der Hüfte anfangen (z.B. 10% der Hosenhöhe nach oben)
-                    const drawY = avgHipY - (pantsHeight * 0.1);
-
-                     // Zeichnen!
-                    ctx.drawImage(grungePantsImg, drawX, drawY, pantsWidth, pantsHeight);
-                }
-            } else {
-                console.log("Keine Person erkannt oder Konfidenz zu niedrig.");
-                // Optional: Eine Meldung auf dem Canvas anzeigen
-                ctx.font = "20px Arial";
-                ctx.fillStyle = "red";
-                ctx.textAlign = "center";
-                ctx.fillText("Keine Person erkannt. Bitte ganz ins Bild stellen.", canvas.width/2, canvas.height - 50);
             }
-
-        } catch (error) {
-            console.error("Fehler bei der Pose-Erkennung während der Aufnahme:", error);
+        } catch (e) {
+            console.log("KI-Erkennung fehlgeschlagen, mache normales Foto.");
         }
     } 
-    
-    // --- Einfache Visuelle Filter anwenden (Falls ausgewählt) ---
-    applySimpleFilters(ctx, selectedFilter);
-
-    // Ergebnis anzeigen
-    finalizeCapture();
-}
-
-// Hilfsfunktion für die einfachen Farbfilter
-function applySimpleFilters(ctx, filter) {
-    if (filter === 'grunge-style') {
-        ctx.fillStyle = 'rgba(50, 30, 0, 0.3)'; // Sepia-artiger Schleier
-        ctx.globalCompositeOperation = 'multiply';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.globalCompositeOperation = 'source-over'; // Zurücksetzen
-    } else if (filter === 'hiphop-baggy') {
-        ctx.strokeStyle = 'gold';
-        ctx.lineWidth = canvas.width * 0.05; // Rahmenbreite relativ zur Bildgröße
-        ctx.strokeRect(0, 0, canvas.width, canvas.height);
-    } else if (filter === 'rave-neon') {
-        ctx.fillStyle = 'rgba(0, 255, 255, 0.2)'; // Cyan Schleier
-        ctx.globalCompositeOperation = 'screen';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.globalCompositeOperation = 'source-over';
+    // Fallback: Wenn 'grunge-outfit' gewählt ist, aber KEINE KI da ist -> Statische Bilder
+    else if (selectedFilter === 'grunge-outfit' && !poseDetector) {
+        // Einfach statisch in die Mitte malen
+        ctx.drawImage(grungeJacketImg, canvas.width*0.1, canvas.height*0.1, canvas.width*0.8, canvas.height*0.4);
+        ctx.drawImage(grungePantsImg, canvas.width*0.2, canvas.height*0.5, canvas.width*0.6, canvas.height*0.5);
     }
-}
 
-// Abschluss der Aufnahme: Bild anzeigen und Button resetten
-function finalizeCapture() {
-    const dataUrl = canvas.toDataURL('image/png');
-    photo.src = dataUrl;
-    photo.style.display = 'block';
-    downloadLink.href = dataUrl;
-    downloadLink.style.display = 'block';
-    
+    // Andere Filter
+    if (selectedFilter === 'grunge-style') {
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(0,0,canvas.width, canvas.height);
+    }
+
+    // --- SPEICHERN (Hier passiert oft der Fehler) ---
+    try {
+        const dataUrl = canvas.toDataURL('image/png');
+        photo.src = dataUrl;
+        photo.style.display = 'block';
+        downloadLink.href = dataUrl;
+        downloadLink.style.display = 'block';
+        
+        // Zu Bild scrollen
+        photo.scrollIntoView({behavior: "smooth"});
+    } catch (securityError) {
+        console.error(securityError);
+        alert("Sicherheitsfehler: Das Bild konnte nicht gespeichert werden.\n\nGrund: Du öffnest die Datei wahrscheinlich lokal (file://). Bitte lade den Ordner auf Netlify hoch oder nutze einen lokalen Server.");
+    }
+
     captureButton.disabled = false;
-    captureButton.innerText = "📸 Neues Foto aufnehmen";
-    
-    // Automatisch zum Ergebnis scrollen (für Mobile)
-    photo.scrollIntoView({behavior: "smooth"});
+    captureButton.innerText = "📸 Foto aufnehmen";
 }
 
-
-// Start everything
+// Start
 initPoseDetection();
-startCamera();
+startCamera(facingMode);
 captureButton.addEventListener('click', takePicture);
