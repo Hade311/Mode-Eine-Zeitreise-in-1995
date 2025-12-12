@@ -1,4 +1,4 @@
-// DOM Elemente holen
+// ... (Variablen wie video, canvas etc. bleiben gleich) ...
 const video = document.getElementById('videoElement');
 const canvas = document.getElementById('canvas');
 const photo = document.getElementById('photo');
@@ -7,14 +7,50 @@ const filterSelect = document.getElementById('filterSelect');
 const captureButton = document.getElementById('captureButton');
 const switchCameraButton = document.getElementById('switchCameraButton');
 const downloadLink = document.getElementById('downloadLink');
+
+// Outfit Bilder
 const grungeJacketImg = document.getElementById('grungeJacket');
 const grungePantsImg = document.getElementById('grungePants');
 
 let currentStream;
 let facingMode = 'user';
 let poseDetector = null;
-// Ein Konfidenzwert (0.0 - 1.0). Nur Punkte über diesem Wert gelten als "erkannt".
-const MIN_CONFIDENCE = 0.35; 
+const MIN_CONFIDENCE = 0.3;
+
+// ===== 1. KI-Modell Initialisierung (VERBESSERT) =====
+async function initPoseDetection() {
+    captureButton.innerText = "⏳ Lade KI...";
+    captureButton.disabled = true;
+
+    try {
+        // Warten, bis TensorFlow bereit ist
+        await tf.ready();
+        console.log("TensorFlow ist bereit. Backend:", tf.getBackend());
+
+        // Konfiguration für das Modell
+        const detectorConfig = { 
+            modelType: posedetection.movenet.modelType.SINGLEPOSE_LIGHTNING 
+        };
+        
+        // Modell erstellen
+        poseDetector = await posedetection.createDetector(
+            posedetection.SupportedModels.MoveNet, 
+            detectorConfig
+        );
+
+        console.log('KI-Modell erfolgreich geladen!');
+        captureButton.innerText = "📸 Foto aufnehmen";
+        captureButton.disabled = false;
+
+    } catch (err) {
+        console.error('Kritischer Fehler beim Laden der KI:', err);
+        // Fallback: Wir erlauben trotzdem das Foto machen, nur ohne Körpererkennung
+        captureButton.innerText = "📸 Foto (ohne KI)";
+        captureButton.disabled = false;
+        alert("Hinweis: Die KI konnte nicht geladen werden (" + err.message + "). Du kannst trotzdem Fotos machen, aber das Outfit wird evtl. nicht perfekt sitzen.");
+    }
+}
+// ... (Rest des Codes bleibt gleich) ...
 
 // ===== 1. KI-Modell Initialisierung =====
 async function initPoseDetection() {
