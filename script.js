@@ -49,40 +49,22 @@ async function initPoseDetection() {
 
 // ===== 2. Kamera =====
 // In der Funktion startCamera
-async function startCamera(facingMode) {
-    if (currentStream) {
-        currentStream.getTracks().forEach(track => track.stop());
-    }
+// Verbessertes startCamera in Ihrer script.js
+// ===== 2. Kamera =====
+// ... (Der Code für async function startCamera(newFacingMode) bleibt GUT!) ...
 
-    // Vereinfachte Constraints, um Konflikte zu vermeiden
-    const constraints = {
-        video: {
-            // Wir lassen facingMode weg, wenn nur eine Kamera verfügbar ist, 
-            // oder verwenden es, wenn es funktioniert.
-            // Zuerst versuchen wir es mit facingMode:
-            facingMode: facingMode
-        },
-        audio: false
-    };
+// HIER IST DIE KORREKTUR:
+switchCameraButton.addEventListener('click', () => {
+    // 1. Den ZIEL-Modus berechnen und in einer lokalen Variable speichern.
+    // Wichtig: Wir ändern die globale Variable 'facingMode' HIER noch NICHT!
+    const targetMode = (facingMode === 'user') ? 'environment' : 'user';
 
-    try {
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
-        currentStream = stream;
-        video.srcObject = stream;
-        
-        // WICHTIG: Prüfen Sie die geladene Auflösung (kann bei Fehlern helfen)
-        video.onloadedmetadata = function() {
-            console.log("Kamera gestartet mit Auflösung:", video.videoWidth, "x", video.videoHeight);
-        };
+    // 2. startCamera mit dem ZIEL-Modus aufrufen.
+    startCamera(targetMode);
+});
 
-        video.play();
-    } catch (err) {
-        console.error("Fehler beim Zugriff auf die Kamera: ", err);
-        alert("Kamera-Fehler: Konnte Videoquelle nicht starten. Ursache: " + err.name);
-        // Falls der Fehler 'NotAllowedError' ist, liegt es an den Berechtigungen (Punkt 1)
-    }
-}
-
+// ===== 3. Filter Auswahl =====
+// ... (Der Rest des Codes bleibt gleich) ...
 switchCameraButton.addEventListener('click', () => {
     facingMode = (facingMode === 'user') ? 'environment' : 'user';
     startCamera();
