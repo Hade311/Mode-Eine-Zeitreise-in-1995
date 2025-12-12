@@ -2,43 +2,56 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <title>90er-Jahre-Foto-Filter</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>90er-Jahre Zeitreise Anprobe</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-    <div class="camera-container">
-        <video id="videoElement" autoplay playsinline></video>
-        <div id="overlay" class="overlay"></div>
+    <div class="header">
+        <h1>📼 Die 90er Anprobe-Station 📼</h1>
+        <p>Wähle deinen Style und mach ein Foto!</p>
     </div>
+
+    <div class="main-content">
+        <div class="camera-section">
+            <div class="camera-container">
+                <video id="videoElement" autoplay playsinline></video>
+                <div id="overlay" class="overlay"></div>
+            </div>
     
+            <div class="controls">
+                <select id="filterSelect">
+                    <option value="none">Original (Kein Filter)</option>
+                    <option value="grunge-outfit">👕 90s Grunge Outfit (Anprobe)</option>
+                    <optgroup label="Nur Visuelle Effekte:">
+                        <option value="grunge-style">Grunge Look (Farbe)</option>
+                        <option value="hiphop-baggy">Hip-Hop Rahmen</option>
+                        <option value="rave-neon">Rave Neon</option>
+                    </optgroup>
+                </select>
+    
+                <button id="captureButton" disabled>📸 Foto aufnehmen (Lädt...)</button>
+                <button id="switchCameraButton">🔄 Kamera wechseln</button>
+            </div>
+        </div>
+    
+        <div class="output-section">
+            <h3>Dein 90er Foto:</h3>
+            <canvas id="canvas" style="display: none;"></canvas>
+            <img id="photo" alt="Dein aufgenommenes Bild erscheint hier">
+            <a id="downloadLink" download="mein_90er_look.png" style="display: none;">💾 Bild speichern</a>
+        </div>
+    </div>
+
     <div style="display: none;">
         <img id="grungeJacket" src="grunge jacket.png" alt="Grunge Jacket" crossorigin="anonymous">
         <img id="grungePants" src="grunge black ripped jeans.png" alt="Grunge Pants" crossorigin="anonymous">
     </div>
 
-    <div class="controls">
-        <select id="filterSelect">
-            <option value="none">Kein Filter (Original)</option>
-            <option value="grunge-style">Grunge (Visuell)</option>
-            <option value="hiphop-baggy">Hip-Hop (Visuell)</option>
-            <option value="rave-neon">Rave (Visuell)</option>
-            <option value="grunge-outfit">**Grunge (Outfit)**</option> 
-        </select>
-
-        <button id="captureButton">📸 Foto aufnehmen</button>
-        <button id="switchCameraButton">🔄 Kamera wechseln (Front/Rück)</button>
-    </div>
-
-    <div class="output">
-        <h3>Aufgenommenes Bild:</h3>
-        <canvas id="canvas" style="display: none;"></canvas>
-        <img id="photo" alt="Aufgenommenes Bild">
-        <a id="downloadLink" download="90er_style_foto.png" style="display: none;">⬇️ Bild herunterladen</a>
-    </div>
-
-    <!-- TensorFlow.js und Pose Detection Libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
     
     <script src="script.js"></script>
