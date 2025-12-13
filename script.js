@@ -48,23 +48,25 @@ async function initPoseDetection() {
 }
 
 // ===== 2. Kamera =====
-// In der Funktion startCamera
-// Verbessertes startCamera in Ihrer script.js
-// ===== 2. Kamera =====
-// ... (Der Code für async function startCamera(newFacingMode) bleibt GUT!) ...
+async function startCamera() {
+    if (currentStream) {
+        currentStream.getTracks().forEach(track => track.stop());
+    }
+    // Versuchen wir eine Standard-Auflösung, die fast alle Handys unterstützen
+    const constraints = {
+        video: { facingMode: facingMode, width: 640, height: 480 },
+        audio: false
+    };
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        currentStream = stream;
+        video.srcObject = stream;
+        video.play();
+    } catch (err) {
+        alert("Kamera-Fehler: " + err.message);
+    }
+}
 
-// HIER IST DIE KORREKTUR:
-switchCameraButton.addEventListener('click', () => {
-    // 1. Den ZIEL-Modus berechnen und in einer lokalen Variable speichern.
-    // Wichtig: Wir ändern die globale Variable 'facingMode' HIER noch NICHT!
-    const targetMode = (facingMode === 'user') ? 'environment' : 'user';
-
-    // 2. startCamera mit dem ZIEL-Modus aufrufen.
-    startCamera(targetMode);
-});
-
-// ===== 3. Filter Auswahl =====
-// ... (Der Rest des Codes bleibt gleich) ...
 switchCameraButton.addEventListener('click', () => {
     facingMode = (facingMode === 'user') ? 'environment' : 'user';
     startCamera();
